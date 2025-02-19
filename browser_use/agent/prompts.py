@@ -50,6 +50,13 @@ class SystemPrompt:
        {"go_to_url": {"url": "https://example.com"}},
        {"extract_content": ""}
      ]
+   - Drag and drop: [
+		{"drag_and_drop": {
+			"source_element": 24,    # index of element to drag
+			"target_x": 500,         # target x coordinate
+			"target_y": 300          # target y coordinate
+		}}
+	 ]
 
 
 3. ELEMENT INTERACTION:

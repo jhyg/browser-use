@@ -60,3 +60,8 @@ class NoParamsAction(BaseModel):
 		# If you want to silently allow unknown fields at top-level,
 		# set extra = 'allow' as well:
 		extra = 'allow'
+
+class DragAndDropAction(BaseModel):
+    source_element: int
+    target_x: int
+    target_y: int

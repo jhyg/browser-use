@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.insert(0, os.path.abspath("."))  # 현재 디렉토리를 가장 먼저 검색하도록
 import asyncio
 from dataclasses import dataclass
 from typing import List, Optional
@@ -61,14 +63,44 @@ async def run_browser_task(
 
 	os.environ['OPENAI_API_KEY'] = api_key
 
+	# 민감한 데이터 정의
+	sensitive_data = {
+		'github_username': 'wkdwo8703@gmail.com',
+		'github_password': '@'
+	}
+
 	try:
+    
+# 		task = """
+# Go to dev.msaez.io
+
+# When github login page appears:
+# 1. Input <secret>github_username</secret> into username field
+# 2. Input <secret>github_password</secret> into password field
+# 3. Click sign in button
+# 4. If "Authorize msa-ez" button appears, click it
+
+# After login:
+# 1. Click the "만들기" button and select "생성" of "이벤트스토밍"
+
+# 2. Go to https://dev.msaez.io/#/storming/b4466f9f6576d82217e90b9bb4b58a5d
+
+# 3. For finding the BoundedContext:
+#    - Click each sticker in the left toolbar one by one
+#    - When you click a sticker, check if it shows "Bounded Context" in its tooltip
+#    - Once you find the sticker that shows "Bounded Context", that's our target
+#    - Remember that element's index
+
+# 4. Once the correct BoundedContext sticker is found, drag it to coordinates (500, 300)
+# """
 		agent = Agent(
 			task=task,
 			llm=ChatOpenAI(model='gpt-4o'),
+			sensitive_data=sensitive_data  # 민감 데이터 전달
 		)
 		result = await agent.run()
 		#  TODO: The result cloud be parsed better
-		return result
+		return str(result)  # Convert AgentHistoryList to string
 	except Exception as e:
 		return f'Error: {str(e)}'
 

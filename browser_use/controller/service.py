@@ -23,6 +23,7 @@ from browser_use.controller.views import (
 	SearchGoogleAction,
 	SendKeysAction,
 	SwitchTabAction,
+	DragAndDropAction,
 )
 from browser_use.utils import time_execution_sync
 
@@ -447,6 +448,43 @@ class Controller(Generic[Context]):
 				msg = f'Selection failed: {str(e)}'
 				logger.error(msg)
 				return ActionResult(error=msg, include_in_memory=True)
+
+		@self.registry.action(
+			'Drag and drop an element to specific coordinates. Provide source element index and target x,y coordinates.',
+			param_model=DragAndDropAction,
+		)
+		async def drag_and_drop(params: DragAndDropAction, browser: BrowserContext):
+			page = await browser.get_current_page()
+			selector_map = await browser.get_selector_map()
+			
+			try:
+				# 소스 엘리먼트 찾기
+				source = selector_map[params.source_element]
+				if not source:
+					raise ValueError(f"Source element with index {params.source_element} not found")
+					
+				# 엘리먼트의 중앙 좌표 구하기
+				locator = page.locator(f"xpath={source.xpath}")
+				box = await locator.bounding_box()
+				if not box:
+					raise ValueError("Could not get element bounding box")
+					
+				start_x = box["x"] + box["width"] / 2
+				start_y = box["y"] + box["height"] / 2
+				
+				# 드래그 앤 드롭 수행
+				await page.mouse.move(start_x, start_y)
+				await page.mouse.down()
+				await page.mouse.move(params.target_x, params.target_y)
+				await page.mouse.up()
+				
+				msg = f"🖱️ Dragged element {params.source_element} to coordinates ({params.target_x}, {params.target_y})"
+				logger.info(msg)
+				return ActionResult(extracted_content=msg, include_in_memory=True)
+				
+			except Exception as e:
+				logger.error(f"Error in drag_and_drop: {str(e)}")
+				raise e
 
 	# Register ---------------------------------------------------------------
 
