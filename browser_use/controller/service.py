@@ -24,6 +24,8 @@ from browser_use.controller.views import (
 	SendKeysAction,
 	SwitchTabAction,
 	DragAndDropAction,
+	DblClickAction,
+	RelationAction,
 )
 from browser_use.utils import time_execution_sync
 
@@ -450,41 +452,101 @@ class Controller(Generic[Context]):
 				return ActionResult(error=msg, include_in_memory=True)
 
 		@self.registry.action(
-			'Drag and drop an element to specific coordinates. Provide source element index and target x,y coordinates.',
+			'Drag and drop an element to specific coordinates. Provide source image file name and target coordinates.',
 			param_model=DragAndDropAction,
 		)
 		async def drag_and_drop(params: DragAndDropAction, browser: BrowserContext):
-			page = await browser.get_current_page()
 			selector_map = await browser.get_selector_map()
 			
+			# 이미지 파일명으로 element index 찾기
+			source_element = None
+			for idx, element in selector_map.items():
+				if ('src' in element.attributes and 
+					params.source_identifier in element.attributes['src']):
+					source_element = idx
+					break
+					
+			if source_element is None:
+				raise ValueError(f"Could not find element with image {params.source_identifier}")
+				
+			# 기존 드래그 앤 드롭 로직 수행
+			page = await browser.get_current_page()
+			source = selector_map[source_element]
+			if not source:
+				raise ValueError(f"Source element with index {source_element} not found")
+			
+			# 엘리먼트의 중앙 좌표 구하기
+			locator = page.locator(f"xpath={source.xpath}")
+			box = await locator.bounding_box()
+			if not box:
+				raise ValueError("Could not get element bounding box")
+			
+			start_x = box["x"] + box["width"] / 2
+			start_y = box["y"] + box["height"] / 2
+			
+			# 드래그 앤 드롭 수행
+			await page.mouse.move(start_x, start_y)
+			await page.mouse.down()
+			await page.mouse.move(params.target_x, params.target_y)
+			await page.mouse.up()
+			
+			msg = f"🖱️ Dragged element {source_element} to coordinates ({params.target_x}, {params.target_y})"
+			logger.info(msg)
+			return ActionResult(extracted_content=msg, include_in_memory=True)
+
+		@self.registry.action(
+			'Double click at specific coordinates on the page',
+			param_model=DblClickAction,
+		)
+		async def double_click(params: DblClickAction, browser: BrowserContext) -> ActionResult:
+			page = await browser.get_current_page()
+			
 			try:
-				# 소스 엘리먼트 찾기
-				source = selector_map[params.source_element]
-				if not source:
-					raise ValueError(f"Source element with index {params.source_element} not found")
-					
-				# 엘리먼트의 중앙 좌표 구하기
-				locator = page.locator(f"xpath={source.xpath}")
-				box = await locator.bounding_box()
-				if not box:
-					raise ValueError("Could not get element bounding box")
-					
-				start_x = box["x"] + box["width"] / 2
-				start_y = box["y"] + box["height"] / 2
-				
-				# 드래그 앤 드롭 수행
-				await page.mouse.move(start_x, start_y)
-				await page.mouse.down()
+				# Move to coordinates and perform double click
 				await page.mouse.move(params.target_x, params.target_y)
-				await page.mouse.up()
+				await page.mouse.dblclick(x=params.target_x, y=params.target_y)
 				
-				msg = f"🖱️ Dragged element {params.source_element} to coordinates ({params.target_x}, {params.target_y})"
+				msg = f"🖱️ Double clicked at coordinates ({params.target_x}, {params.target_y})"
 				logger.info(msg)
 				return ActionResult(extracted_content=msg, include_in_memory=True)
 				
 			except Exception as e:
-				logger.error(f"Error in drag_and_drop: {str(e)}")
-				raise e
+				error_msg = f"Failed to double click: {str(e)}"
+				logger.error(error_msg)
+				return ActionResult(error=error_msg)
+
+		@self.registry.action(
+			'Create relation between two elements by clicking source, relation icon, and target',
+			param_model=RelationAction,
+		)
+		async def create_relation(params: RelationAction, browser: BrowserContext) -> ActionResult:
+			page = await browser.get_current_page()
+			
+			try:
+				# 1. Click source element
+				await page.mouse.move(params.source_x, params.source_y)
+				await page.mouse.click(x=params.source_x, y=params.source_y)
+				await page.wait_for_timeout(500)  # 안정성을 위한 대기
+				
+				# 2. Click relation icon (source 기준 x+80, y+50 위치)
+				relation_x = params.source_x + 80
+				relation_y = params.source_y + 50
+				await page.mouse.move(relation_x, relation_y)
+				await page.mouse.click(x=relation_x, y=relation_y)
+				await page.wait_for_timeout(500)  # 안정성을 위한 대기
+				
+				# 3. Click target element
+				await page.mouse.move(params.target_x, params.target_y)
+				await page.mouse.click(x=params.target_x, y=params.target_y)
+				
+				msg = f"🔗 Created relation from ({params.source_x}, {params.source_y}) to ({params.target_x}, {params.target_y})"
+				logger.info(msg)
+				return ActionResult(extracted_content=msg, include_in_memory=True)
+				
+			except Exception as e:
+				error_msg = f"Failed to create relation: {str(e)}"
+				logger.error(error_msg)
+				return ActionResult(error=error_msg)
 
 	# Register ---------------------------------------------------------------
 

@@ -52,12 +52,52 @@ class SystemPrompt:
      ]
    - Drag and drop: [
 		{"drag_and_drop": {
-			"source_element": 24,    # index of element to drag
+			"source_identifier": "image_file_name", # e.g. 만약 사용자가 BC or BoundedContext 생성을 요청했으면 이미지 파일명은 "bounded2.png" 이어야 한다.
 			"target_x": 500,         # target x coordinate
 			"target_y": 300          # target y coordinate
 		}}
 	 ]
-
+   
+   ** 사용자가 아래에 해당하는 element 생성, 그려달라는 요청이 있을 경우 Drag and drop 을 사용하여 해당 element 를 생성, 그려야 한다.
+   ** Available toolbar elements and their image identifiers:
+		- Event: "event.png"
+		- Command: "command.png"
+		- Policy: "policy.png"
+		- Aggregate: "aggregate.png"
+		- External: "external.png"
+		- View: "view.png"
+		- Issue: "issue.png"
+		- UI: "ui_small.png"
+		- BoundedContext: "bounded2.png"
+		- PBC: "pbc.png"
+		- Actor: "actor.png"
+		- Edge: "edge.png"
+		- Text: "text_element.png"
+  
+   # e.g. 사용자가 이렇게 요청한 경우 Create BoundedContext(500, 300), 원하는 결과는 아래와 같다:
+   # 1. 사용자가 요청한 것은 BoundedContext 이므로 이미지 파일명은 "bounded2.png" 이어야 한다.
+   # 2. 사용자가 요청한 것은 (500, 300) 좌표에 생성, 그리기 이므로 target_x 와 target_y 는 500 과 300 이어야 한다.
+   # {"drag_and_drop": {
+			"source_identifier": "bounded2.png", 
+			"target_x": 500,        
+			"target_y": 300
+		}}
+  
+   - Double click at coordinates: [
+       {"double_click": {
+           "target_x": 500,    # target x coordinate
+           "target_y": 300     # target y coordinate
+       }}
+    ]
+   
+   - Create relation between elements: [
+       {"create_relation": {
+           "source_x": 200,    # source element x coordinate
+           "source_y": 250,    # source element y coordinate
+           "target_x": 400,    # target element x coordinate
+           "target_y": 250     # target element y coordinate
+       }}
+   ]
 
 3. ELEMENT INTERACTION:
    - Only use indexes that exist in the provided element list

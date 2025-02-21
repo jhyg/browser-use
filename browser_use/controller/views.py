@@ -62,6 +62,16 @@ class NoParamsAction(BaseModel):
 		extra = 'allow'
 
 class DragAndDropAction(BaseModel):
-    source_element: int
+    source_identifier: str
+    target_x: int
+    target_y: int
+
+class DblClickAction(BaseModel):
+    target_x: int
+    target_y: int
+
+class RelationAction(BaseModel):
+    source_x: int
+    source_y: int
     target_x: int
     target_y: int
