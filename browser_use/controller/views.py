@@ -70,8 +70,6 @@ class DblClickAction(BaseModel):
     target_x: int
     target_y: int
 
-class RelationAction(BaseModel):
-    source_x: int
-    source_y: int
+class ClickActionWithPosition(BaseModel):
     target_x: int
     target_y: int

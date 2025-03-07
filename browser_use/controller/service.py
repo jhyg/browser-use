@@ -25,7 +25,7 @@ from browser_use.controller.views import (
 	SwitchTabAction,
 	DragAndDropAction,
 	DblClickAction,
-	RelationAction,
+	ClickActionWithPosition
 )
 from browser_use.utils import time_execution_sync
 
@@ -514,32 +514,19 @@ class Controller(Generic[Context]):
 				error_msg = f"Failed to double click: {str(e)}"
 				logger.error(error_msg)
 				return ActionResult(error=error_msg)
-
+		
 		@self.registry.action(
 			'Create relation between two elements by clicking source, relation icon, and target',
-			param_model=RelationAction,
+			param_model=ClickActionWithPosition,
 		)
-		async def create_relation(params: RelationAction, browser: BrowserContext) -> ActionResult:
+		async def click_action_with_position(params: ClickActionWithPosition, browser: BrowserContext) -> ActionResult:
 			page = await browser.get_current_page()
 			
 			try:
-				# 1. Click source element
-				await page.mouse.move(params.source_x, params.source_y)
-				await page.mouse.click(x=params.source_x, y=params.source_y)
-				await page.wait_for_timeout(500)  # 안정성을 위한 대기
-				
-				# 2. Click relation icon (source 기준 x+80, y+50 위치)
-				relation_x = params.source_x + 80
-				relation_y = params.source_y + 50
-				await page.mouse.move(relation_x, relation_y)
-				await page.mouse.click(x=relation_x, y=relation_y)
-				await page.wait_for_timeout(500)  # 안정성을 위한 대기
-				
-				# 3. Click target element
 				await page.mouse.move(params.target_x, params.target_y)
 				await page.mouse.click(x=params.target_x, y=params.target_y)
 				
-				msg = f"🔗 Created relation from ({params.source_x}, {params.source_y}) to ({params.target_x}, {params.target_y})"
+				msg = f"🔗 Click position from ({params.target_x}, {params.target_y})"
 				logger.info(msg)
 				return ActionResult(extracted_content=msg, include_in_memory=True)
 				
