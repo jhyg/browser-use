@@ -452,28 +452,50 @@ class Controller(Generic[Context]):
 				return ActionResult(error=msg, include_in_memory=True)
 
 		@self.registry.action(
-			'Drag and drop an element to specific coordinates. Provide source image file name and target coordinates.',
+			'Drag and drop an element to specific coordinates. Element can be identified by image name, class id, xpath, or element id.',
 			param_model=DragAndDropAction,
 		)
 		async def drag_and_drop(params: DragAndDropAction, browser: BrowserContext):
 			selector_map = await browser.get_selector_map()
 			
-			# 이미지 파일명으로 element index 찾기
+			# Find source element based on type and identifier
 			source_element = None
-			for idx, element in selector_map.items():
-				if ('src' in element.attributes and 
-					params.source_identifier in element.attributes['src']):
-					source_element = idx
-					break
-					
-			if source_element is None:
-				raise ValueError(f"Could not find element with image {params.source_identifier}")
+			if params.source_type == "image_name":
+				# Find element by image source
+				for idx, element in selector_map.items():
+					if ('src' in element.attributes and 
+						params.source_identifier in element.attributes['src']):
+						source_element = idx
+						break
+			elif params.source_type == "class_id":
+				# Find element by class
+				for idx, element in selector_map.items():
+					if ('class' in element.attributes and 
+						params.source_identifier in element.attributes['class']):
+						source_element = idx
+						break
+			elif params.source_type == "xpath":
+				# Find element by xpath
+				for idx, element in selector_map.items():
+					if element.xpath == params.source_identifier:
+						source_element = idx
+						break
+			elif params.source_type == "element_id":
+				# Find element by id attribute
+				for idx, element in selector_map.items():
+					if ('id' in element.attributes and 
+						params.source_identifier == element.attributes['id']):
+						source_element = idx
+						break
+			else:
+				raise ValueError(f"Unsupported identifier type: {params.source_type}")
 				
-			# 기존 드래그 앤 드롭 로직 수행
+			if source_element is None:
+				raise ValueError(f"Could not find element with {params.source_type} = {params.source_identifier}")
+				
+			# 드래그 앤 드롭 수행
 			page = await browser.get_current_page()
 			source = selector_map[source_element]
-			if not source:
-				raise ValueError(f"Source element with index {source_element} not found")
 			
 			# 엘리먼트의 중앙 좌표 구하기
 			locator = page.locator(f"xpath={source.xpath}")
@@ -490,7 +512,7 @@ class Controller(Generic[Context]):
 			await page.mouse.move(params.target_x, params.target_y)
 			await page.mouse.up()
 			
-			msg = f"🖱️ Dragged element {source_element} to coordinates ({params.target_x}, {params.target_y})"
+			msg = f"🖱️ Dragged element ({params.source_type}={params.source_identifier}) to coordinates ({params.target_x}, {params.target_y})"
 			logger.info(msg)
 			return ActionResult(extracted_content=msg, include_in_memory=True)
 
@@ -500,8 +522,9 @@ class Controller(Generic[Context]):
 		)
 		async def double_click(params: DblClickAction, browser: BrowserContext) -> ActionResult:
 			page = await browser.get_current_page()
-			
+   
 			try:
+    
 				# Move to coordinates and perform double click
 				await page.mouse.move(params.target_x, params.target_y)
 				await page.mouse.dblclick(x=params.target_x, y=params.target_y)
@@ -523,6 +546,7 @@ class Controller(Generic[Context]):
 			page = await browser.get_current_page()
 			
 			try:
+    
 				await page.mouse.move(params.target_x, params.target_y)
 				await page.mouse.click(x=params.target_x, y=params.target_y)
 				

@@ -127,13 +127,19 @@ class DOMElementNode(DOMBaseNode):
 				# Add element with highlight_index
 				if node.highlight_index is not None:
 					attributes_str = ''
+					# 이미지 태그인 경우 src 속성 추가
+					if node.tag_name == 'img':
+						src = node.attributes.get('src', '')
+						attributes_str = f' src="{src}"'
+					# 다른 요청된 속성들 추가
 					if include_attributes:
-						attributes_str = ' ' + ' '.join(
-							f'{key}="{value}"' for key, value in node.attributes.items() if key in include_attributes
+						attributes_str += ' ' + ' '.join(
+							f'{key}="{value}"' 
+							for key, value in node.attributes.items() 
+							if key in include_attributes
 						)
-					formatted_text.append(
-						f'[{node.highlight_index}]<{node.tag_name}{attributes_str}>{node.get_all_text_till_next_clickable_element()}</{node.tag_name}>'
-					)
+					element_text = f'[{node.highlight_index}]<{node.tag_name}{attributes_str}>{node.get_all_text_till_next_clickable_element()}</{node.tag_name}>'
+					formatted_text.append(element_text)
 
 				# Process children regardless
 				for child in node.children:
@@ -145,7 +151,13 @@ class DOMElementNode(DOMBaseNode):
 					formatted_text.append(f'[]{node.text}')
 
 		process_node(self, 0)
-		return '\n'.join(formatted_text)
+		
+		# 디버깅을 위한 LLM에게 전달되는 문자열 출력
+		result = '\n'.join(formatted_text)
+		print("\n=== String Passed to LLM ===")
+		print(result)
+		
+		return result
 
 	def get_file_upload_element(self, check_siblings: bool = True) -> Optional['DOMElementNode']:
 		# Check if current element is a file input

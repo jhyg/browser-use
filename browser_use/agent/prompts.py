@@ -63,12 +63,13 @@ class SystemPrompt:
        }}
      ]
    - Drag and drop: [
-		{"drag_and_drop": {
-			"source_identifier": "image_file_name", # e.g. 만약 사용자가 BC or BoundedContext 생성을 요청했으면 이미지 파일명은 "bounded2.png" 이어야 한다.
-			"target_x": 500,         # target x coordinate
-			"target_y": 300          # target y coordinate
-		}}
-	 ]
+        {"drag_and_drop": {
+            "source_type": "image_name" | "class_id" | "xpath" | "element_id",  # Identifier type for source element
+            "source_identifier": "string",        # The actual identifier value
+            "target_x": 500,                     # target x coordinate
+            "target_y": 300                      # target y coordinate
+        }}
+     ]
 
 3. ELEMENT INTERACTION:
    - Only use indexes that exist in the provided element list
