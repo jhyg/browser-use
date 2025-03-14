@@ -119,18 +119,84 @@ class DOMElementNode(DOMBaseNode):
 
 	@time_execution_sync('--clickable_elements_to_string')
 	def clickable_elements_to_string(self, include_attributes: list[str] = []) -> str:
-		"""Convert the processed DOM content to HTML."""
 		formatted_text = []
-
+		
+		def find_icon_class(node: DOMElementNode) -> str:
+			"""재귀적으로 i 태그를 찾아 클래스를 반환"""
+			if node.tag_name == 'i':
+				return node.attributes.get('class', '')
+			
+			for child in node.children:
+				if isinstance(child, DOMElementNode):
+					icon_class = find_icon_class(child)
+					if icon_class:
+						return icon_class
+			return ''
+		
 		def process_node(node: DOMBaseNode, depth: int) -> None:
 			if isinstance(node, DOMElementNode):
-				# Add element with highlight_index
 				if node.highlight_index is not None:
 					attributes_str = ''
-					# 이미지 태그인 경우 src 속성 추가
+					
+					# 이미지 태그 처리
 					if node.tag_name == 'img':
 						src = node.attributes.get('src', '')
 						attributes_str = f' src="{src}"'
+					
+					# g 태그 처리 (생성된 노드 그룹)
+					elif node.tag_name == 'g':
+						node_id = node.attributes.get('id', '')
+						# g 태그 내의 모든 text 내용 찾기
+						type_text = ''
+						label_text = ''
+						for child in node.children:
+							if isinstance(child, DOMElementNode) and child.tag_name == 'text':
+								text_content = child.get_all_text_till_next_clickable_element().strip()
+								if '<<' in text_content:  # type 텍스트
+									type_text = text_content.replace('<<', '').replace('>>', '').strip()
+								else:  # 라벨 텍스트
+									label_text = text_content
+						
+						if type_text or label_text:
+							attributes_str = f' id="{node_id}"'
+							if type_text:
+								attributes_str += f' type="{type_text}"'
+							if label_text:
+								attributes_str += f' label="{label_text}"'
+
+					# rect 태그 처리 추가
+					elif node.tag_name == 'rect':
+						node_id = node.attributes.get('id', '')
+						x = node.attributes.get('x', '')
+						y = node.attributes.get('y', '')
+						attributes_str = f' id="{node_id}"'
+						if x and y:
+							attributes_str += f' x="{x}" y="{y}"'
+					
+					# 버튼 태그 처리
+					elif node.tag_name == 'button':
+						icon_class = find_icon_class(node)
+						if icon_class:
+							attributes_str += f' icon="{icon_class}"'
+					
+					# input 태그 처리
+					elif node.tag_name == 'input':
+						input_id = node.attributes.get('id', '')
+						input_type = node.attributes.get('type', '')
+						# 상위 label 찾기
+						parent = node.parent
+						while parent:
+							for child in parent.children:
+								if (isinstance(child, DOMElementNode) and 
+									child.tag_name == 'label' and 
+									child.attributes.get('for') == input_id):
+									label_text = child.get_all_text_till_next_clickable_element()
+									attributes_str = f' label="{label_text}"'
+									break
+							if attributes_str:
+								break
+							parent = parent.parent
+					
 					# 다른 요청된 속성들 추가
 					if include_attributes:
 						attributes_str += ' ' + ' '.join(
@@ -138,21 +204,18 @@ class DOMElementNode(DOMBaseNode):
 							for key, value in node.attributes.items() 
 							if key in include_attributes
 						)
-					element_text = f'[{node.highlight_index}]<{node.tag_name}{attributes_str}>{node.get_all_text_till_next_clickable_element()}</{node.tag_name}>'
+					
+					element_text = f'[{node.highlight_index}]<{node.tag_name}{attributes_str}>'
 					formatted_text.append(element_text)
 
-				# Process children regardless
 				for child in node.children:
 					process_node(child, depth + 1)
-
 			elif isinstance(node, DOMTextNode):
-				# Add text only if it doesn't have a highlighted parent
 				if not node.has_parent_with_highlight_index() and node.is_parent_top_element() and node.is_visible:
 					formatted_text.append(f'[]{node.text}')
 
 		process_node(self, 0)
 		
-		# 디버깅을 위한 LLM에게 전달되는 문자열 출력
 		result = '\n'.join(formatted_text)
 		print("\n=== String Passed to LLM ===")
 		print(result)

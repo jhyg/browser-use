@@ -1,8 +1,8 @@
 def get_task_improvement_prompt(task, recording_content):
     prompt = f"""사용자 요청과 사용자 요청을 녹화한 시범 내용을 보고 사용자 요청을 
 보다 상세하게 정확한 대상 지정을 가능하도록 
-생성할 객체의 정보("image_name" | "class_id" | "xpath" | "element_id", target_xy: (x, y)) 표시하여 개선해야한다. 
-녹화 내용중 이미지 정보(image_name)가 존재하는 경우 생성할 객체 정보는 "image_name" 을 사용하여 표시하여야한다.
+생성할 객체의 정보("image_src" | "class_id" | "xpath" | "element_id", target_xy: (x, y)) 표시하여 개선해야한다. 
+녹화 내용중 이미지 정보(image_src)가 존재하는 경우 생성할 객체 정보는 "image_src" 을 사용하여 표시하여야한다.
 이미지 정보가 없는 경우에는 "class_id" | "xpath" | "element_id" 중 하나를 사용하여 표시하여야한다.
 사용자 요청 녹화 내용은 사용자 요청과 순서가 다르거나 누락되었을 경우가 있기때문에 사용자 요청을 우선하여야하며, 
 사용자 요청과 사용자 요청 녹화 내용의 의미를 이해하여 알맞게 매핑하여 생성해야한다.

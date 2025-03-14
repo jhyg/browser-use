@@ -203,7 +203,6 @@
   // Helper function to check if element is accepted
   function isElementAccepted(element) {
     const leafElementDenyList = new Set([
-      "svg",
       "script",
       "style",
       "link",
@@ -244,7 +243,10 @@
       "select",
       "textarea",
       "canvas",
-      "summary"
+      "summary",
+      "svg",
+      "g",
+      "rect"
     ]);
 
     const interactiveRoles = new Set([
@@ -282,6 +284,9 @@
       "button-text-icon-only",
       "dropdown",
       "combobox",
+      "svg",
+      "g",
+      "rect"
     ]);
 
     const tagName = element.tagName.toLowerCase();
@@ -418,6 +423,11 @@
    * Checks if an element is visible.
    */
   function isElementVisible(element) {
+    const tagName = element.tagName.toLowerCase();
+    if ((tagName === 'svg' || tagName === 'g' || tagName === 'rect') && element.id) {
+        return true;
+    }
+
     const style = window.getComputedStyle(element);
     return (
         element.offsetWidth > 0 &&

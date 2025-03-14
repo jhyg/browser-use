@@ -25,7 +25,7 @@ from browser_use.controller.views import (
 	SwitchTabAction,
 	DragAndDropAction,
 	DblClickAction,
-	ClickActionWithPosition
+	ClickActionWithIdAndPosition
 )
 from browser_use.utils import time_execution_sync
 
@@ -460,13 +460,23 @@ class Controller(Generic[Context]):
 			
 			# Find source element based on type and identifier
 			source_element = None
-			if params.source_type == "image_name":
+			if params.source_type == "image_src":
 				# Find element by image source
 				for idx, element in selector_map.items():
-					if ('src' in element.attributes and 
-						params.source_identifier in element.attributes['src']):
-						source_element = idx
-						break
+					if 'src' in element.attributes:
+						element_src = element.attributes['src']
+						
+						# First try exact match
+						if params.source_identifier == element_src:
+							source_element = idx
+							break
+						
+						# If exact match fails, try filename matching
+						src_filename = element_src.split('/')[-1]
+						identifier_filename = params.source_identifier.split('/')[-1]
+						if identifier_filename in src_filename:
+							source_element = idx
+							break
 			elif params.source_type == "class_id":
 				# Find element by class
 				for idx, element in selector_map.items():
@@ -517,45 +527,71 @@ class Controller(Generic[Context]):
 			return ActionResult(extracted_content=msg, include_in_memory=True)
 
 		@self.registry.action(
+			'Create relation between two elements by clicking source, relation icon, and target',
+			param_model=ClickActionWithIdAndPosition,
+		)
+		async def click_action_with_id_and_position(params: ClickActionWithIdAndPosition, browser: BrowserContext) -> ActionResult:
+			page = await browser.get_current_page()
+			selector_map = await browser.get_selector_map()
+   
+			try:
+				element_found = None
+				if params.element_id:
+					for idx, element in selector_map.items():
+						if ('id' in element.attributes and 
+							params.element_id == element.attributes['id']):
+							element_found = idx
+							break
+    
+				if element_found is not None:
+					element = page.locator(f"//*[@id='{params.element_id}']")
+					await element.click(force=True)
+					msg = f"🖱️ Clicked element with id: {params.element_id}"
+				else:
+					# 좌표로 클릭
+					await page.mouse.move(params.target_x, params.target_y)
+					await page.mouse.click(x=params.target_x, y=params.target_y)
+					msg = f"🖱️ Clicked at coordinates ({params.target_x}, {params.target_y})"
+				
+				logger.info(msg)
+				return ActionResult(extracted_content=msg, include_in_memory=True)
+				
+			except Exception as e:
+				error_msg = f"Failed to click: {str(e)}"
+				logger.error(error_msg)
+				return ActionResult(error=error_msg)
+
+		@self.registry.action(
 			'Double click at specific coordinates on the page',
 			param_model=DblClickAction,
 		)
 		async def double_click(params: DblClickAction, browser: BrowserContext) -> ActionResult:
 			page = await browser.get_current_page()
+			selector_map = await browser.get_selector_map()
    
 			try:
+				element_found = None
+				if params.element_id:
+					for idx, element in selector_map.items():
+						if ('id' in element.attributes and 
+							params.element_id == element.attributes['id']):
+							element_found = idx
+							break
     
-				# Move to coordinates and perform double click
-				await page.mouse.move(params.target_x, params.target_y)
-				await page.mouse.dblclick(x=params.target_x, y=params.target_y)
+				if element_found is not None:
+					element = page.locator(f"//*[@id='{params.element_id}']")
+					await element.dblclick(force=True)
+					msg = f"🖱️ Double clicked element with id: {params.element_id}"
+				else:
+					await page.mouse.move(params.target_x, params.target_y)
+					await page.mouse.dblclick(x=params.target_x, y=params.target_y)
+					msg = f"🖱️ Double clicked at coordinates ({params.target_x}, {params.target_y})"
 				
-				msg = f"🖱️ Double clicked at coordinates ({params.target_x}, {params.target_y})"
 				logger.info(msg)
 				return ActionResult(extracted_content=msg, include_in_memory=True)
 				
 			except Exception as e:
 				error_msg = f"Failed to double click: {str(e)}"
-				logger.error(error_msg)
-				return ActionResult(error=error_msg)
-		
-		@self.registry.action(
-			'Create relation between two elements by clicking source, relation icon, and target',
-			param_model=ClickActionWithPosition,
-		)
-		async def click_action_with_position(params: ClickActionWithPosition, browser: BrowserContext) -> ActionResult:
-			page = await browser.get_current_page()
-			
-			try:
-    
-				await page.mouse.move(params.target_x, params.target_y)
-				await page.mouse.click(x=params.target_x, y=params.target_y)
-				
-				msg = f"🔗 Click position from ({params.target_x}, {params.target_y})"
-				logger.info(msg)
-				return ActionResult(extracted_content=msg, include_in_memory=True)
-				
-			except Exception as e:
-				error_msg = f"Failed to create relation: {str(e)}"
 				logger.error(error_msg)
 				return ActionResult(error=error_msg)
 

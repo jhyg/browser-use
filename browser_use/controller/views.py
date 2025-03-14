@@ -68,9 +68,11 @@ class DragAndDropAction(BaseModel):
     target_y: int
 
 class DblClickAction(BaseModel):
+    element_id: str
     target_x: int
     target_y: int
 
-class ClickActionWithPosition(BaseModel):
+class ClickActionWithIdAndPosition(BaseModel):
+    element_id: str
     target_x: int
     target_y: int

@@ -50,21 +50,23 @@ class SystemPrompt:
        {"go_to_url": {"url": "https://example.com"}},
        {"extract_content": ""}
      ]
-   - Double click at coordinates: [
+   - Double click: [
        {"double_click": {
-           "target_x": 500,    # target x coordinate
-           "target_y": 300     # target y coordinate
+           "element_id": "string",
+           "target_x": target x,
+           "target_y": target y
        }}
      ]
-   - click with position: [
-       {"click_action_with_position": {
-           "target_x": 500,    # target x 
-           "target_y": 300     # target y 
+   - click with id and position: [
+       {"click_action_with_id_and_position": {
+           "element_id": "string",
+           "target_x": target x,
+           "target_y": target y
        }}
      ]
    - Drag and drop: [
         {"drag_and_drop": {
-            "source_type": "image_name" | "class_id" | "xpath" | "element_id",  # Identifier type for source element
+            "source_type": "image_src" | "class_id" | "xpath" | "element_id",  # Identifier type for source element
             "source_identifier": "string",        # The actual identifier value
             "target_x": 500,                     # target x coordinate
             "target_y": 300                      # target y coordinate
